@@ -79,7 +79,7 @@ const MoviesScreen: React.FC = () => {
       {filteredItems.length > 0 ? (
         <FlatList
           data={filteredItems}
-          renderItem={({ item, index }) => <MovieRow movie={item} />}
+          renderItem={({ item, index }) => <MovieRow movie={item} index={index} />}
           keyExtractor={(item) => item.id.toString()}
         />
       ) : (

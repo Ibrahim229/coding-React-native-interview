@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
-import { Text, StyleSheet, View, Image, ScrollView } from "react-native";
+import { Text, StyleSheet, View, Image } from "react-native";
 import { MovieDetailsNavigationProp, MovieDetailsRouteProp } from "../../types/navProps";
-
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, useAnimatedScrollHandler, interpolate } from "react-native-reanimated";
 
 interface Props {
     route: MovieDetailsRouteProp;
@@ -10,9 +10,38 @@ interface Props {
 
 const MovieDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
     const { movie } = route.params;
+    // animation
+    // scroll animation
+    const scrollY = useSharedValue(0);
+    const scrollHandler = useAnimatedScrollHandler((event) => {
+        scrollY.value = event.contentOffset.y;
+    });
+
+    const posterAnimatedStyle = useAnimatedStyle(() => {
+        const scale = interpolate(scrollY.value, [0, 200], [1, 0.5], {
+            extrapolateRight: "clamp",
+        });
+        const translateY = interpolate(scrollY.value, [0, 200], [0, -100], {
+            extrapolateRight: "clamp",
+        });
+
+        return {
+            transform: [{ scale }, { translateY }],
+        };
+    });
+    // Text animation
+    const textOpacity = useSharedValue(0);
+    const textTranslateY = useSharedValue(30);
+
+    const textAnimatedStyle = useAnimatedStyle(() => ({
+        opacity: withTiming(textOpacity.value, { duration: 2000 }),
+        transform: [{ translateY: withTiming(textTranslateY.value, { duration: 500 }) }],
+    }));
 
 
     useEffect(() => {
+        textOpacity.value = withTiming(1, { duration: 500 });
+        textTranslateY.value = withTiming(0, { duration: 500 })
         navigation.getParent()?.setOptions({ headerShown: false });
         return () => {
             navigation.getParent()?.setOptions({ headerShown: true });
@@ -21,19 +50,20 @@ const MovieDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
 
     return (
         <View>
-            <View style={[styles.posterContainer]}>
+            <Animated.View style={[styles.posterContainer, posterAnimatedStyle]}>
                 <Image
                     source={{ uri: `https://image.tmdb.org/t/p/w500/${movie.poster_path}` }}
                     style={styles.poster}
-                /></View>
-            <ScrollView
+                /></Animated.View>
+            <Animated.ScrollView
                 contentContainerStyle={styles.scrollContent}
+                onScroll={scrollHandler}
                 scrollEventThrottle={16}
             >
-                <View >
+                <Animated.View style={[textAnimatedStyle]}>
                     <Text style={styles.title}>{movie.title}</Text>
                     <Text style={styles.overview}>{movie.overview}</Text>
-                </View></ScrollView>
+                </Animated.View></Animated.ScrollView>
         </View>
 
     );
