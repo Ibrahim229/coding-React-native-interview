@@ -5,9 +5,10 @@ import HomeScreen from "./screens/home/HomeScreen";
 import MoviesScreen from "./screens/movies/MoviesScreen";
 import MovieDetailsScreen from "./screens/movies/MovieDetailsScreen";
 import { createStackNavigator } from "@react-navigation/stack";
+import { MoviesStackParamList } from "./types/navProps";
 
 const Drawer = createDrawerNavigator();
-const Stack = createStackNavigator();
+const Stack = createStackNavigator<MoviesStackParamList>();
 
 // Nested Stack Navigator for Movies
 const MoviesStackNavigator = () => {
