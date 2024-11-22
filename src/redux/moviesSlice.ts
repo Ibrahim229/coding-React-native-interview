@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { fetchMovies, Movie } from "../api/moviesApi";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface MoviesState {
   items: Movie[];
@@ -7,9 +8,11 @@ interface MoviesState {
   status: "idle" | "loading" | "succeeded" | "failed";
   searchQuery: string;
   genre: string;
+  lastFetched: number | null;
 }
 
-
+const CACHE_KEY = "moviesCache";
+const CACHE_EXPIRATION = 1000 * 60 * 5; // 5 minutes
 
 const initialState: MoviesState = {
   items: [],
@@ -17,11 +20,27 @@ const initialState: MoviesState = {
   status: "idle",
   searchQuery: "",
   genre: "",
+  lastFetched: null,
 };
 
 export const loadMovies = createAsyncThunk("movies/loadMovies", async (_, thunkAPI) => {
+
+  const cachedData = await AsyncStorage.getItem(CACHE_KEY);
+  if (cachedData) {
+    const { items, lastFetched } = JSON.parse(cachedData);
+    const now = Date.now();
+    console.log(lastFetched)
+
+    if (lastFetched && now - lastFetched < CACHE_EXPIRATION) {
+      return { items, cached: true };
+    }
+  }
   const items = await fetchMovies();
-  return { items };
+  await AsyncStorage.setItem(
+    CACHE_KEY,
+    JSON.stringify({ items, lastFetched: Date.now() })
+  ); // Cache the fetched data
+  return { items, cached: false };
 });
 
 const moviesSlice = createSlice({
@@ -42,8 +61,13 @@ const moviesSlice = createSlice({
       .addCase(loadMovies.pending, (state) => {
         state.status = "loading";
       })
-      .addCase(loadMovies.fulfilled, (state, action: PayloadAction<{ items: Movie[]; }>) => {
+      .addCase(loadMovies.fulfilled, (state, action: PayloadAction<{ items: Movie[]; cached: boolean }>) => {
         state.status = "succeeded";
+        console.log(action.payload.cached)
+        if (!action.payload.cached) {
+          state.lastFetched = Date.now(); 
+        }
+
         state.items = action.payload.items;
         filterMovies(state); 
       })
