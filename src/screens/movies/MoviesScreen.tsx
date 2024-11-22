@@ -1,75 +1,117 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
-    View,
-    FlatList,
-    StyleSheet,
+  View,
+  FlatList,
+  TextInput,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
-import { Movie } from "../../api/moviesApi";
+import Icon from "react-native-vector-icons/Ionicons"; // Import Icon
+import { useDispatch, useSelector } from "react-redux";
+import ActionSheet from "react-native-actionsheet";
+import { loadMovies, setSearchQuery, setGenre } from "../../redux/moviesSlice";
+import { AppDispatch, RootState } from "../../redux/store";
 import MovieRow from "../../components/MovieRow";
 
-const MoviesScreen = () => {
-    return (
+const MoviesScreen: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { filteredItems, status } = useSelector((state: RootState) => state.movies);
 
-        <View style={styles.container}>
-            <FlatList
-                data={mockMovies}
-                renderItem={({ item, index }) => <MovieRow movie={item} />}
-                keyExtractor={(item) => item.id.toString()}
-            />
-        </View>
+  const actionSheetRef = useRef<ActionSheet>(null);
+
+  const genres = [
+    "All Genres",
+    "Action",
+    "Comedy",
+    "Drama",
+    "Horror",
+    "Cancel",
+  ];
+  const genreValues = ["", "28", "35", "18", "27"];
+
+  useEffect(() => {
+    dispatch(loadMovies());
+  }, [dispatch]);
+
+  const handleFilterPress = () => {
+    actionSheetRef.current?.show();
+  };
+
+  const handleActionSheetSelect = (index: number) => {
+    if (index !== genres.length - 1) {
+      dispatch(setGenre(genreValues[index]));
+    }
+  };
+
+
+
+  if (status === "loading") {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
     );
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search movies..."
+          onChangeText={(query) => dispatch(setSearchQuery(query))}
+        />
+        <TouchableOpacity onPress={handleFilterPress} style={styles.filterButton}>
+          <Icon name="filter-outline" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
+
+      <ActionSheet
+        ref={actionSheetRef}
+        title={"Select Genre"}
+        options={genres}
+        cancelButtonIndex={genres.length - 1}
+        onPress={handleActionSheetSelect}
+      />
+
+      {filteredItems.length > 0 ? (
+        <FlatList
+          data={filteredItems}
+          renderItem={({ item, index }) => <MovieRow movie={item} />}
+          keyExtractor={(item) => item.id.toString()}
+        />
+      ) : (
+        <Text style={styles.noResults}>No movies found</Text>
+      )}
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 10 },
+  container: { flex: 1, padding: 10 },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+  },
+  filterButton: {
+    marginLeft: 10,
+    padding: 5,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  noResults: { textAlign: "center", marginTop: 20, fontSize: 16, color: "#999" },
 });
 
 export default MoviesScreen;
-
-const mockMovies: Movie[] = [
-    {
-        id: 1,
-        title: "Inception",
-        overview: "A skilled thief is given a chance at redemption if he can successfully perform inception: planting an idea into someone's subconscious.",
-        poster_path: "/inception-poster.jpg",
-        release_date: "2010-07-16",
-        genre_ids: [28, 878, 12],
-        vote_average: 8.8,
-    },
-    {
-        id: 2,
-        title: "The Shawshank Redemption",
-        overview: "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
-        poster_path: "/shawshank-redemption-poster.jpg",
-        release_date: "1994-09-22",
-        genre_ids: [18, 80],
-        vote_average: 9.3,
-    },
-    {
-        id: 3,
-        title: "The Dark Knight",
-        overview: "When the menace known as the Joker emerges from his mysterious past, he wreaks havoc and chaos on Gotham City.",
-        poster_path: "/dark-knight-poster.jpg",
-        release_date: "2008-07-18",
-        genre_ids: [28, 80, 18],
-        vote_average: 9.0,
-    },
-    {
-        id: 4,
-        title: "Interstellar",
-        overview: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
-        poster_path: "/interstellar-poster.jpg",
-        release_date: "2014-11-07",
-        genre_ids: [12, 18, 878],
-        vote_average: 8.6,
-    },
-    {
-        id: 5,
-        title: "The Godfather",
-        overview: "The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.",
-        poster_path: "/godfather-poster.jpg",
-        release_date: "1972-03-24",
-        genre_ids: [18, 80],
-        vote_average: 9.2,
-    },
-];

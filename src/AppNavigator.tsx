@@ -18,7 +18,6 @@ const MoviesStackNavigator = () => {
             <Stack.Screen
                 name="MovieDetails"
                 component={MovieDetailsScreen}
-                options={{ headerShown: true }}
             />
         </Stack.Navigator>
     );

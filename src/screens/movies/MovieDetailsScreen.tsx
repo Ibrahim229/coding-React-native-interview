@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, View } from "react-native";
 
 const MovieDetailsScreen = () => {
+    
     return (
         <View> </View>
     );
